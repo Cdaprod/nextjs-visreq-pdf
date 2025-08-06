@@ -7,7 +7,7 @@ RUN apt-get update \
 
 WORKDIR /action
 
-COPY package.json package-lock.json ./
+COPY package.json ./
 RUN npm install --omit=dev --no-save
 
 COPY scripts ./scripts
