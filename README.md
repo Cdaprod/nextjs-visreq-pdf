@@ -1,3 +1,5 @@
+[![CI](https://github.com/Cdaprod/nextjs-visreq-pdf/actions/workflows/ci.yml/badge.svg)](https://github.com/Cdaprod/nextjs-visreq-pdf/actions/workflows/ci.yml)
+
 # Next.js Visual Regression to PDF
 
 #### By: [Cdaprod](https://github.com/Cdaprod)
