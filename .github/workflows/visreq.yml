@@ -12,10 +12,9 @@ jobs:
       - name: 📄 visual regression PDF
         uses: Cdaprod/nextjs-visreg-pdf@v1
         with:
-          workdir: docker/web-app            # ← where your Next.js project lives
-          build_cmd: 'pnpm run build'
-          start_cmd: 'pnpm run start'
+          context: docker/web-app            # ← path containing your Dockerfile
+          dockerfile: Dockerfile
           port: '3000'
           keep: '5'
-          pdf_dir: 'public/visual-regression'
+          output_dir: 'public/visual-regression'
 

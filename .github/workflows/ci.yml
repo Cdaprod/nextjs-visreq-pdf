@@ -18,20 +18,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
       - name: create sample app
         run: |
           mkdir sample
           cat <<'EOP' > sample/package.json
           {
             "name": "sample",
-            "version": "1.0.0",
-            "scripts": {
-              "build": "node build.mjs",
-              "start": "node server.mjs"
-            }
+            "version": "1.0.0"
           }
           EOP
           cat <<'EOB' > sample/build.mjs
@@ -50,15 +43,22 @@ jobs:
           });
           server.listen(3000);
           EOS
+          cat <<'EOD' > sample/Dockerfile
+          FROM node:20
+          WORKDIR /app
+          COPY package.json build.mjs server.mjs ./
+          RUN node build.mjs
+          EXPOSE 3000
+          CMD ["node","server.mjs"]
+          EOD
       - name: run action
         uses: ./
         with:
-          workdir: sample
-          build_cmd: 'pnpm run build'
-          start_cmd: 'pnpm run start'
+          context: sample
+          dockerfile: Dockerfile
           port: '3000'
           keep: '2'
-          pdf_dir: 'public/visual-regression'
+          output_dir: 'sample/public/visual-regression'
           commit: 'false'
       - run: test -f sample/public/visual-regression/*.pdf
 
