@@ -1,0 +1,7 @@
+node_modules/
+package-lock.json
+docs/visual-regression/
+docker/web-app/node_modules/
+docker/web-app/.next/
+docker/web-app/public/
+

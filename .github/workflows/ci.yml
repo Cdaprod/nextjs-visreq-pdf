@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm test
+
+  demo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: run action
+        uses: ./
+        with:
+          context: docker/web-app
+          dockerfile: Dockerfile
+          port: '3000'
+          depth: '1'
+          keep: '2'
+          output_dir: 'docker/web-app/public/visual-regression'
+          commit: 'false'
+      - run: test -f docker/web-app/public/visual-regression/*.pdf
+

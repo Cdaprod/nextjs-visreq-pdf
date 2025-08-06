@@ -1,82 +1,39 @@
 name: 'Next.js visual-regression → PDF'
 author: 'Cdaprod'
 description: >
-  Autonomous PDF generator--Visual Regression Testing for small projects.
+  Visual regression PDF generator that crawls a Docker-built Next.js app.
 
 inputs:
-  workdir:
-    description: 'Sub-directory that contains the Next.js app'
+  context:
+    description: 'Docker build context for the app'
     default: '.'
-  build_cmd:
-    description: 'Command to build the site'
-    default: 'pnpm run build'
-  start_cmd:
-    description: 'Command that starts the production server'
-    default: 'pnpm run start'
+  dockerfile:
+    description: 'Dockerfile within the context'
+    default: 'Dockerfile'
   port:
-    description: 'Port the server listens on'
+    description: 'Port exposed by the container and crawler'
     default: '3000'
-  keep:
-    description: 'How many historical PDFs to keep'
-    default: '5'
-  pdf_dir:
-    description: 'Folder (inside repo) to store PDFs'
-    default: 'docs/visual-regression'
   depth:
     description: 'Crawler link depth (0 = only /)'
     default: '2'
+  output_dir:
+    description: 'Folder (inside repo) to store PDFs'
+    default: 'docs/visual-regression'
+  keep:
+    description: 'How many historical PDFs to keep'
+    default: '5'
+  commit:
+    description: 'Commit/push generated PDFs back to the repo'
+    default: 'true'
 
 runs:
-  using: 'composite'
-  steps:
-    - name: ✨ Install Node & deps
-      uses: pnpm/action-setup@v2
-      with:
-        version: '8'
-    - run: |
-        cd ${{ inputs.workdir }}
-        pnpm install --frozen-lockfile
-      shell: bash
-
-    - name: 🔨 Build
-      run: cd ${{ inputs.workdir }} && ${{ inputs.build_cmd }}
-      shell: bash
-
-    - name: 🚀 Start server
-      run: |
-        cd ${{ inputs.workdir }}
-        ${{ inputs.start_cmd }} &
-        npx wait-port ${{ inputs.port }}
-      shell: bash
-
-    - name: 📸 Crawl & render PDF
-      run: |
-        node ${{ github.action_path }}/scripts/crawl2pdf.mjs \
-             http://localhost:${{ inputs.port }} \
-             ${{ inputs.depth }} \
-             visreg.pdf
-      shell: bash
-
-    - name: 🗄️ Move & prune
-      run: |
-        set -e
-        mkdir -p ${{ inputs.pdf_dir }}
-        cp visreg.pdf ${{ inputs.pdf_dir }}/${{ github.sha }}.pdf
-        cd ${{ inputs.pdf_dir }}
-        ls -t *.pdf | tail -n +$((${{ inputs.keep }}+1)) | xargs -r git rm -f --
-      shell: bash
-
-    - name: � commit
-      env:
-        GH_TOKEN: ${{ github.token }}
-      run: |
-        git config user.name  'visreg-bot'
-        git config user.email 'visreg-bot@users.noreply.github.com'
-        git add ${{ inputs.pdf_dir }}
-        if git diff --cached --quiet; then
-          echo 'nothing to commit'
-        else
-          git commit -m "chore(visreg): update PDF for ${{ github.sha }}"
-          git push "https://${GH_TOKEN}@github.com/${{ github.repository }}.git" HEAD:${{ github.ref_name }}
-        fi
-      shell: bash
+  using: docker
+  image: Dockerfile
+  args:
+    - ${{ inputs.context }}
+    - ${{ inputs.dockerfile }}
+    - ${{ inputs.port }}
+    - ${{ inputs.depth }}
+    - ${{ inputs.output_dir }}
+    - ${{ inputs.keep }}
+    - ${{ inputs.commit }}
