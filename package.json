@@ -1,0 +1,10 @@
+{
+  "name": "nextjs-visreg-pdf",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "pdf-lib": "^1.17.1",
+    "puppeteer": "^22.0.0",
+    "wait-port": "^1.0.0"
+  }
+}
