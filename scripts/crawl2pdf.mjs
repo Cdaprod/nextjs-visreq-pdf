@@ -1,10 +1,28 @@
 #!/usr/bin/env node
-import puppeteer from 'puppeteer';
-import { PDFDocument } from 'pdf-lib';
+/**
+ * Crawl a website and generate a merged PDF of all internal pages.
+ *
+ * Usage:
+ *   node crawl2pdf.mjs <baseUrl> [depth] [output]
+ *
+ * Example:
+ *   node crawl2pdf.mjs http://localhost:3000 2 visreg.pdf
+ */
 import { URL } from 'url';
+import { writeFile } from 'fs/promises';
 
-const [base, maxDepthStr, outFile] = process.argv.slice(2);
-const maxDepth = Number(maxDepthStr || '2');
+const [base, depthStr = '2', outFile = 'visreg.pdf'] = process.argv.slice(2);
+
+if (!base) {
+  console.error('Usage: node crawl2pdf.mjs <baseUrl> [depth] [output]');
+  process.exit(1);
+}
+
+const maxDepth = Number(depthStr);
+const [{ default: puppeteer }, { PDFDocument }] = await Promise.all([
+  import('puppeteer'),
+  import('pdf-lib')
+]);
 
 async function crawl() {
   const browser = await puppeteer.launch({ headless: 'new' });
@@ -20,41 +38,49 @@ async function crawl() {
     const page = await browser.newPage();
     await page.goto(url, { waitUntil: 'networkidle2' });
 
-    // snapshot → buffer
-    pdfBuffers.push(await page.pdf({
-      format: 'Letter',
-      printBackground: true,
-      margin: { top: '12mm', bottom: '12mm', left: '12mm', right: '12mm' },
-      displayHeaderFooter: true,
-      headerTemplate:
-        `<style>*{font-size:8px;margin:0}</style><span style="margin-left:10mm">${url}</span>`,
-      footerTemplate:
-        '<style>*{font-size:8px;margin:0}</style><span style="margin-left:10mm">© Cdaprods</span>'
-    }));
+    pdfBuffers.push(
+      await page.pdf({
+        format: 'Letter',
+        printBackground: true,
+        margin: { top: '12mm', bottom: '12mm', left: '12mm', right: '12mm' },
+        displayHeaderFooter: true,
+        headerTemplate:
+          `<style>*{font-size:8px;margin:0}</style><span style="margin-left:10mm">${url}</span>`,
+        footerTemplate:
+          '<style>*{font-size:8px;margin:0}</style><span style="margin-left:10mm">© visreg</span>'
+      })
+    );
 
-    // enqueue internal links
     const anchors = await page.$$eval('a[href]', nodes =>
-      nodes.map(n => n.getAttribute('href')));
+      nodes.map(n => n.getAttribute('href'))
+    );
     const root = new URL(base);
     anchors.forEach(href => {
       try {
         const u = new URL(href, root);
-        if (u.origin === root.origin) queue.push({ url: u.href, depth: depth + 1 });
-      } catch {/* ignore */}
+        if (u.origin === root.origin) {
+          queue.push({ url: u.href, depth: depth + 1 });
+        }
+      } catch {
+        /* ignore */
+      }
     });
 
     await page.close();
   }
 
-  // merge
   const merged = await PDFDocument.create();
   for (const buf of pdfBuffers) {
     const src = await PDFDocument.load(buf);
     const pages = await merged.copyPages(src, src.getPageIndices());
     pages.forEach(p => merged.addPage(p));
   }
-  await Deno.writeFile(outFile, merged.saveSync());
+  const bytes = await merged.save();
+  await writeFile(outFile, Buffer.from(bytes));
   await browser.close();
 }
 
-crawl().catch(e => { console.error(e); process.exit(1); });
+crawl().catch(err => {
+  console.error(err);
+  process.exit(1);
+});

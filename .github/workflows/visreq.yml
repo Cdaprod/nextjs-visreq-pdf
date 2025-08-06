@@ -1,7 +1,7 @@
 name: visreg
 
 on:
-  push: { branches: [ main ] }
+  workflow_dispatch:
 
 jobs:
   pdf:
@@ -18,3 +18,4 @@ jobs:
           port: '3000'
           keep: '5'
           pdf_dir: 'public/visual-regression'
+

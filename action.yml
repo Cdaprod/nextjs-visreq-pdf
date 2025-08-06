@@ -25,14 +25,24 @@ inputs:
   depth:
     description: 'Crawler link depth (0 = only /)'
     default: '2'
+  commit:
+    description: 'Commit/push generated PDFs back to the repo'
+    default: 'true'
 
 runs:
   using: 'composite'
   steps:
-    - name: ✨ Install Node & deps
+    - name: 🔧 Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+    - name: ✨ Install pnpm
       uses: pnpm/action-setup@v2
       with:
         version: '8'
+    - name: 📦 Install action deps
+      run: npm install --omit=dev --no-save
+      shell: bash
     - run: |
         cd ${{ inputs.workdir }}
         pnpm install --frozen-lockfile
@@ -66,7 +76,8 @@ runs:
         ls -t *.pdf | tail -n +$((${{ inputs.keep }}+1)) | xargs -r git rm -f --
       shell: bash
 
-    - name: � commit
+    - name: 📬 Commit
+      if: ${{ inputs.commit == 'true' }}
       env:
         GH_TOKEN: ${{ github.token }}
       run: |
@@ -80,3 +91,4 @@ runs:
           git push "https://${GH_TOKEN}@github.com/${{ github.repository }}.git" HEAD:${{ github.ref_name }}
         fi
       shell: bash
+

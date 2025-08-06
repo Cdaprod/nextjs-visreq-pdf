@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm test
+
+  demo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: create sample app
+        run: |
+          mkdir sample
+          cat <<'EOP' > sample/package.json
+          {
+            "name": "sample",
+            "version": "1.0.0",
+            "scripts": {
+              "build": "node build.mjs",
+              "start": "node server.mjs"
+            }
+          }
+          EOP
+          cat <<'EOB' > sample/build.mjs
+          import { mkdir, writeFile } from 'fs/promises';
+          await mkdir('build', { recursive: true });
+          await writeFile('build/index.html', '<a href="/about">About</a>');
+          await writeFile('build/about.html', '<a href="/">Home</a>');
+          EOB
+          cat <<'EOS' > sample/server.mjs
+          import http from 'http';
+          import { readFile } from 'fs/promises';
+          import { join } from 'path';
+          const server = http.createServer(async (req, res) => {
+            const file = join('build', req.url === '/' ? '/index.html' : req.url + '.html');
+            res.end(await readFile(file));
+          });
+          server.listen(3000);
+          EOS
+      - name: run action
+        uses: ./
+        with:
+          workdir: sample
+          build_cmd: 'pnpm run build'
+          start_cmd: 'pnpm run start'
+          port: '3000'
+          keep: '2'
+          pdf_dir: 'public/visual-regression'
+          commit: 'false'
+      - run: test -f sample/public/visual-regression/*.pdf
+
