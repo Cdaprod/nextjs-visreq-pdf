@@ -1,8 +1,7 @@
 name: 'Next.js visual-regression → PDF'
 author: 'Cdaprod'
 description: >
-  Build a Next.js App-router project, crawl all internal pages, render them to a
-  single PDF, and commit it into docs/visual-regression/ (keeping the newest N).
+  Autonomous PDF generator--Visual Regression Testing for small projects.
 
 inputs:
   workdir:
