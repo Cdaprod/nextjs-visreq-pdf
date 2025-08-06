@@ -9,6 +9,7 @@ WORKDIR /action
 
 COPY package.json ./
 RUN npm install --omit=dev --no-save
+RUN npm install -g wait-port@1.1.0
 
 COPY scripts ./scripts
 COPY entrypoint.sh /entrypoint.sh
