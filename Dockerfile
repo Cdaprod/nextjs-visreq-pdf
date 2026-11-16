@@ -1,4 +1,4 @@
-FROM node:20-bullseye
+FROM node:24.22.3-bookworm
 
 # Install docker CLI and chromium for puppeteer
 RUN apt-get update \
