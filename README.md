@@ -55,3 +55,11 @@ That’s it—on each push to main you’ll end up with a shareable PDF of your 
 
 Built and maintained by Cdaprod. Feel free to open issues or pull requests!
 
+
+## Runtime security baseline
+
+The action image and CI use **Node.js 24.22.3**, the patched November 11, 2026 Node 24 LTS security release. The Docker base is `node:24.22.3-bookworm`. The test suite includes a static regression guard to catch accidental changes to these runtime pins (`npm test`). This is a source-code assertion, **not** a substitute for a successful Docker build, vulnerability scan, or end-to-end PDF generation.
+
+Before releasing a new action version, verify both CI jobs: `test` and the Docker-based `demo`. The demo must build the container, start the Next.js fixture, and generate a PDF. Existing workflow runs may be cancelled or fail; do not treat a green unit-test job alone as release acceptance. For local verification, run `npm test` and the action's Docker demo in an environment with Docker available.
+
+Reference: [Node.js November 2026 security release](https://nodejs.org/en/blog/vulnerability/november-2026-security-releases).
